@@ -1,0 +1,239 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+              
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); 
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Billing System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">E-Billing System</div>
+        <div class="navbar-toggle" id="navbar-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <ul class="navbar-menu" id="navbar-menu">
+            <li><a href="#home" class="nav-link">Home</a></li>
+            <li><a href="#create-invoice" class="nav-link">Create Invoice</a></li>
+            <li><a href="#add-item" class="nav-link">Add Item</a></li>
+            <li><a href="#invoices-list" class="nav-link">Invoices</a></li>
+            <li><a href="#view-invoice" class="nav-link">View Invoice</a></li>
+            <li><a href="#dashboard" class="nav-link">Dashboard</a></li>
+            <li><a href="#login" class="nav-link" id="login-link">Login</a></li>
+            <li><a href="#register" class="nav-link" id="register-link">Register</a></li>
+            <li><a href="#logout" class="nav-link" id="logout-link" style="display: none;">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="section" id="home">
+            <div class="hero">
+                <h1 class="animate-hero">Welcome to E-Billing System</h1>
+                <p class="animate-hero">Create professional invoices in seconds with our intuitive platform.</p>
+                <div class="hero-buttons">
+                    <a href="#create-invoice" class="btn btn-primary animate-hero"><i class="fas fa-file-invoice"></i> Create Invoice</a>
+                    <a href="#dashboard" class="btn btn-secondary animate-hero"><i class="fas fa-chart-line"></i> View Dashboard</a>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat-card animate-card">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <h3>1000+</h3>
+                    <p>Invoices Generated</p>
+                </div>
+                <div class="stat-card animate-card">
+                    <i class="fas fa-users"></i>
+                    <h3>500+</h3>
+                    <p>Happy Customers</p>
+                </div>
+                <div class="stat-card animate-card">
+                    <i class="fas fa-clock"></i>
+                    <h3>24/7</h3>
+                    <p>Support Available</p>
+                </div>
+            </div>
+            <div class="features">
+                <div class="feature-card animate-card">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>Easy Invoicing</h3>
+                    <p>Create and manage invoices effortlessly.</p>
+                </div>
+                <div class="feature-card animate-card">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Insightful Analytics</h3>
+                    <p>Track your business with real-time data.</p>
+                </div>
+                <div class="feature-card animate-card">
+                    <i class="fas fa-lock"></i>
+                    <h3>Secure Platform</h3>
+                    <p>Your data is safe with us.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" id="create-invoice" style="display: none;">
+            <h2>Create New Invoice</h2>
+            <form id="create-invoice-form" class="form-animated">
+                <div class="form-progress">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <div class="form-group animate-form">
+                    <label for="customer-name">Customer Name</label>
+                    <input type="text" id="customer-name" placeholder="Enter customer name" required>
+                    <span class="error-message" id="customer-name-error"></span>
+                </div>
+                <div class="form-group animate-form">
+                    <label for="customer-email">Customer Email</label>
+                    <input type="email" id="customer-email" placeholder="Enter customer email" required>
+                    <span class="error-message" id="customer-email-error"></span>
+                </div>
+                <button type="submit" class="btn btn-primary animate-form">Create Invoice</button>
+            </form>
+            <div id="confirmation-modal" class="modal" style="display: none;">
+                <div class="modal-content animate-modal">
+                    <h3>Invoice Created!</h3>
+                    <p id="modal-invoice-id"></p>
+                    <button class="btn btn-primary" id="modal-close">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" id="add-item" style="display: none;">
+            <h2>Add Item to Invoice</h2>
+            <form id="add-item-form" class="form-animated">
+                <div class="form-group">
+                    <label for="invoice-id">Invoice ID</label>
+                    <input type="text" id="invoice-id" placeholder="Enter invoice ID" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-description">Item Description</label>
+                    <input type="text" id="item-description" placeholder="Enter item description" required>
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" placeholder="Enter quantity" required min="1">
+                </div>
+                <div class="form-group">
+                    <label for="unit-price">Unit Price</label>
+                    <input type="number" id="unit-price" placeholder="Enter unit price" required step="0.01">
+                </div>
+                <button type="submit" class="btn btn-primary">Add Item</button>
+            </form>
+        </div>
+
+        <div class="section" id="invoices-list" style="display: none;">
+            <h2>Invoices</h2>
+            <button id="list-invoices" class="btn btn-primary">List All Invoices</button>
+            <div id="invoices-list"></div>
+        </div>
+
+        <div class="section" id="view-invoice" style="display: none;">
+            <h2>View Invoice</h2>
+            <div class="form-group">
+                <input type="text" id="view-invoice-id" placeholder="Enter Invoice ID">
+                <button id="view-invoice" class="btn btn-primary">View Invoice</button>
+                <button id="download-png" style="display: none; margin-left: 10px;" class="btn btn-secondary">Download as PNG</button>
+                <button id="download-pdf" style="display: none; margin-left: 10px;" class="btn btn-secondary">Download as PDF</button>
+            </div>
+            <div id="invoice-details"></div>
+        </div>
+
+        <div class="section" id="dashboard" style="display: none;">
+            <h2>Dashboard</h2>
+            <div id="dashboard-stats">
+                <p>Total Invoices: <span id="total-invoices">0</span></p>
+                <p>Total Revenue: ₹<span id="total-revenue">0.00</span></p>
+                <p>Invoices This Month: <span id="invoices-this-month">0</span></p>
+            </div>
+            <div class="chart-container">
+                <h3>Total by Customer</h3>
+                <canvas id="customer-chart" width="400" height="200"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Invoices by Date</h3>
+                <canvas id="date-chart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="section" id="login">
+            <h2>Login Profile</h2>
+            <form id="login-form" class="form-animated">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+
+        <div class="section" id="register" style="display: none;">
+            <h2>Register</h2>
+            <form id="register-form" class="form-animated">
+                <div class="form-group">
+                    <label for="reg-username">Username</label>
+                    <input type="text" id="reg-username" placeholder="Enter username" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">Email</label>
+                    <input type="email" id="reg-email" placeholder="Enter email" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
